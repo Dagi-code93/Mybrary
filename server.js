@@ -8,6 +8,7 @@ const bodyParser = require("body-parser");
 
 const indexRouter = require("./routes/indexRoutes");
 const authorsRouter = require("./routes/authorsRouter");
+const booksRouter = require("./routes/bookRouter");
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use(bodyParser.urlencoded({ limit : "10mb", extended: false }))
 
 app.use("/", indexRouter);
 app.use("/authors", authorsRouter);
+app.use("/books", booksRouter);
 
 app.listen(process.env.PORT || 3000);
 
