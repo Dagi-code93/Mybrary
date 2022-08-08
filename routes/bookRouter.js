@@ -1,21 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const path = require("path");
-const fs = require("fs");
-const multer = require("multer");
 
 const Book = require("../models/books");
 const Author = require("../models/authors");
 
 const imageMimeTypes = ["image/jpeg", "image/png", "image/png"];
-const uploadPath = path.join("public", Book.bookCoverBasePath);
-
-const upload = multer({
-    dest: uploadPath,
-    fileFilter: (req, file, callback) => {
-        callback(null, imageMimeTypes.includes(file.mimetype));
-    }
-})
 
 // All Books
 router.get("/", async (req, res) => {
@@ -46,24 +35,20 @@ router.get("/new", async (req, res) => {
     renderNewBook(res, new Book());
 })
 
-router.post("/", upload.single("cover"), async (req, res) => {
-    const coverImageName = req.file != null ? req.file.filename : null;
+router.post("/", async (req, res) => {
     const book = new Book({
         title: req.body.title,
         author: req.body.author,
         publishDate: new Date(req.body.publishDate),
         pageCount: req.body.pageCount,
-        description: req.body.description,
-        coverImageName
+        description: req.body.description
     })
+    saveCover(book, req.body.cover);
     try{
         const newBook = await book.save();
         // res.redirect(`/books/${newBook.id}`);
         res.redirect("/books");
     }catch(e){
-        if(coverImageName != null){
-            removeBookCover(coverImageName);
-        }
         renderNewBook(res, new Book(), true);
     }
 })
@@ -83,10 +68,13 @@ async function renderNewBook(res, passedbook, hasError = false){
     }
 }
 
-function removeBookCover(bookFileName){
-    fs.unlink(path.join(uploadPath, bookFileName), err => {
-        if(err) console.error(err);
-    })
+function saveCover(book, encodedCover){
+    if(encodedCover == null) return;
+    const cover = JSON.parse(encodedCover);
+    if(cover != null && imageMimeTypes.includes(cover.type)){
+        book.coverImage = new Buffer.from(cover.data, "base64");
+        book.coverImageType = cover.type;
+    }
 }
 
 module.exports = router;
